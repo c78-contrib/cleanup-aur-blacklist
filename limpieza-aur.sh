@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PACKAGES_FILE="$SCRIPT_DIR/paquetes.txt"
+PACKAGES_FILE="$SCRIPT_DIR/paquetes-full.txt"
 REPORT_DIR="$SCRIPT_DIR/reportes"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 REPORT_FILE="$REPORT_DIR/instalados-${TIMESTAMP}.txt"
@@ -27,7 +27,7 @@ detect_helper() {
 }
 
 parse_aur_names() {
-    grep -oP '^[a-zA-Z0-9][a-zA-Z0-9._+-]+(?=:)' "$PACKAGES_FILE" | sort -u
+    sed 's/:.*//' "$PACKAGES_FILE" | grep -oP '^[a-zA-Z0-9][a-zA-Z0-9._+-]+' | sort -u
 }
 
 get_installed_aur() {
