@@ -26,6 +26,15 @@ Interactive script to identify and uninstall AUR packages listed in `packages-fu
    - **One by one mode**: confirms each package individually
    - **Cancel**
 
+## Language
+
+The script detects the system language from the `$LANG` environment variable. If `$LANG` starts with `es` (e.g., `es_ES.UTF-8`, `es_MX.UTF-8`), all output messages appear in Spanish. Otherwise, English is used as the default.
+
+```
+LANG=es_ES.UTF-8 ./cleanup-aur.sh    # Mensajes en español
+LANG=en_US.UTF-8 ./cleanup-aur.sh    # English messages
+```
+
 ## Dry-run mode
 
 With `--dry-run` the script operates the same but without executing real uninstallation commands. Instead it shows the command that would be executed:

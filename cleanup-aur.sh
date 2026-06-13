@@ -14,11 +14,122 @@ BLUE='\033[0;34m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+LANG_ES=false
+
 banner() { echo -e "${BLUE}${BOLD}═══ $1 ═══${NC}"; }
 info()  { echo -e "${BLUE}[*]${NC} $1"; }
 ok()    { echo -e "${GREEN}[✔]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[!]${NC} $1"; }
 err()   { echo -e "${RED}[✘]${NC} $1"; }
+
+detect_lang() {
+    local lang="${LANG:-${LC_ALL:-${LC_MESSAGES:-}}}"
+    [[ "$lang" =~ ^es(_|$) ]] && LANG_ES=true || LANG_ES=false
+}
+
+t() {
+    if $LANG_ES; then
+        case "$1" in
+            banner_cleanup)         echo "LIMPIEZA AUR" ;;
+            banner_cleanup_dry)     echo "LIMPIEZA AUR [DRY-RUN]" ;;
+            banner_uninstall)       echo "DESINSTALAR PAQUETES AUR" ;;
+            banner_uninstall_dry)   echo "DESINSTALAR PAQUETES AUR [DRY-RUN]" ;;
+
+            report_title)           echo "Reporte de paquetes AUR instalados" ;;
+            report_generated)       echo "Generado" ;;
+            report_file)            echo "Archivo" ;;
+            report_total)           echo "Total en archivo" ;;
+            report_installed)       echo "Instalados" ;;
+            fmt_report_saved)       echo "Reporte guardado en: %s" ;;
+
+            msg_simulation)         echo "Modo simulación: no se ejecutará ningún comando real." ;;
+            prompt_confirm)         echo "¿Deseas desinstalarlos? [s/N]:" ;;
+            msg_cancelled_none)     echo "Cancelado. No se desinstaló ningún paquete." ;;
+            msg_all_together)       echo "Todos juntos  (una sola operación)" ;;
+            msg_one_by_one)         echo "Uno por uno    (confirmar cada paquete)" ;;
+            msg_cancel_option)      echo "Cancelar" ;;
+            prompt_mode)            echo "Elige modo [1-3]:" ;;
+            msg_uninstalling_all)   echo "Desinstalando todos los paquetes..." ;;
+            msg_uninstall_done)     echo "Desinstalación completada." ;;
+            msg_cancelled)          echo "Cancelado." ;;
+            fmt_skipping)           echo "Saltando %s" ;;
+            fmt_finished)           echo "Finalizado. Se desinstalaron %s paquete(s)." ;;
+            fmt_dry_finished)       echo "[DRY-RUN] Se habrían desinstalado %s paquete(s)." ;;
+            fmt_would_exec)         echo "[DRY-RUN] Se ejecutaría: %s -Rns %s" ;;
+            fmt_progress)           echo "[%s/%s] ¿Desinstalar %s? [s/N]:" ;;
+
+            usage_header)           echo "Uso: %s [OPCIONES]" ;;
+            usage_options)          echo "Opciones:" ;;
+            usage_dry)              echo "  --dry-run    Simula la desinstalación sin ejecutar comandos reales" ;;
+            usage_help)             echo "  -h, --help   Muestra esta ayuda" ;;
+            fmt_unknown)            echo "Opción desconocida: %s" ;;
+
+            msg_parsing)            echo "Parseando %s..." ;;
+            fmt_found_file)         echo "%s paquetes AUR encontrados en el archivo" ;;
+            msg_querying)           echo "Consultando paquetes AUR instalados en el sistema..." ;;
+            fmt_installed)          echo "%s paquetes AUR instalados en total en el sistema" ;;
+            msg_crossref)           echo "Cruzando listas..." ;;
+            msg_no_matches)         echo "Ningún paquete del archivo está instalado actualmente." ;;
+            fmt_matches_found)      echo "Se encontraron %s paquete(s) del archivo instalados." ;;
+            fmt_found_n)            echo "Se encontraron %s paquetes del archivo instalados:" ;;
+            msg_finished)           echo "Script finalizado." ;;
+            fmt_helper)             echo "Helper AUR detectado: %s" ;;
+            fmt_no_file)            echo "No se encontró el archivo: %s" ;;
+
+            *) echo "$1" ;;
+        esac
+    else
+        case "$1" in
+            banner_cleanup)         echo "AUR CLEANUP" ;;
+            banner_cleanup_dry)     echo "AUR CLEANUP [DRY-RUN]" ;;
+            banner_uninstall)       echo "UNINSTALL AUR PACKAGES" ;;
+            banner_uninstall_dry)   echo "UNINSTALL AUR PACKAGES [DRY-RUN]" ;;
+
+            report_title)           echo "Report of installed AUR packages" ;;
+            report_generated)       echo "Generated" ;;
+            report_file)            echo "File" ;;
+            report_total)           echo "Total in file" ;;
+            report_installed)       echo "Installed" ;;
+            fmt_report_saved)       echo "Report saved to: %s" ;;
+
+            msg_simulation)         echo "Simulation mode: no real commands will be executed." ;;
+            prompt_confirm)         echo "Do you want to uninstall them? [y/N]:" ;;
+            msg_cancelled_none)     echo "Cancelled. No packages were uninstalled." ;;
+            msg_all_together)       echo "All together  (single operation)" ;;
+            msg_one_by_one)         echo "One by one     (confirm each package)" ;;
+            msg_cancel_option)      echo "Cancel" ;;
+            prompt_mode)            echo "Choose mode [1-3]:" ;;
+            msg_uninstalling_all)   echo "Uninstalling all packages..." ;;
+            msg_uninstall_done)     echo "Uninstallation completed." ;;
+            msg_cancelled)          echo "Cancelled." ;;
+            fmt_skipping)           echo "Skipping %s" ;;
+            fmt_finished)           echo "Finished. %s package(s) uninstalled." ;;
+            fmt_dry_finished)       echo "[DRY-RUN] Would have uninstalled %s package(s)." ;;
+            fmt_would_exec)         echo "[DRY-RUN] Would execute: %s -Rns %s" ;;
+            fmt_progress)           echo "[%s/%s] Uninstall %s? [y/N]:" ;;
+
+            usage_header)           echo "Usage: %s [OPTIONS]" ;;
+            usage_options)          echo "Options:" ;;
+            usage_dry)              echo "  --dry-run    Simulates uninstallation without executing real commands" ;;
+            usage_help)             echo "  -h, --help   Show this help" ;;
+            fmt_unknown)            echo "Unknown option: %s" ;;
+
+            msg_parsing)            echo "Parsing %s..." ;;
+            fmt_found_file)         echo "%s AUR packages found in file" ;;
+            msg_querying)           echo "Querying installed AUR packages on system..." ;;
+            fmt_installed)          echo "%s AUR packages installed in total on system" ;;
+            msg_crossref)           echo "Cross-referencing lists..." ;;
+            msg_no_matches)         echo "No packages from the file are currently installed." ;;
+            fmt_matches_found)      echo "Found %s package(s) from the file installed." ;;
+            fmt_found_n)            echo "Found %s packages from the file installed:" ;;
+            msg_finished)           echo "Script finished." ;;
+            fmt_helper)             echo "AUR helper detected: %s" ;;
+            fmt_no_file)            echo "File not found: %s" ;;
+
+            *) echo "$1" ;;
+        esac
+    fi
+}
 
 detect_helper() {
     if command -v paru &>/dev/null; then echo "paru"
@@ -44,12 +155,14 @@ generate_report() {
     mkdir -p "$REPORT_DIR"
     {
         echo "=============================================="
-        echo "  Report of installed AUR packages"
+        echo "  $(t report_title)"
         echo "=============================================="
-        echo "  Generated : $(date)"
-        echo "  File      : $PACKAGES_FILE"
-        echo "  Total in file : $(parse_aur_names | wc -l) packages"
-        echo "  Installed     : ${#installed_ref[@]} packages"
+        echo "  $(t report_generated) : $(date)"
+        echo "  $(t report_file)      : $PACKAGES_FILE"
+        local pkg_count
+        pkg_count=$(parse_aur_names | wc -l)
+        echo "  $(t report_total) : $pkg_count packages"
+        echo "  $(t report_installed)     : ${#installed_ref[@]} packages"
         echo "=============================================="
         echo ""
         for pkg in "${installed_ref[@]}"; do
@@ -62,7 +175,7 @@ generate_report() {
             echo ""
         done
     } > "$REPORT_FILE"
-    ok "Report saved to: $REPORT_FILE"
+    ok "$(printf "$(t fmt_report_saved)" "$REPORT_FILE")"
 }
 
 uninstall_packages() {
@@ -73,12 +186,12 @@ uninstall_packages() {
 
     echo ""
     if $dry_run; then
-        banner "UNINSTALL AUR PACKAGES [DRY-RUN]"
+        banner "$(t banner_uninstall_dry)"
     else
-        banner "UNINSTALL AUR PACKAGES"
+        banner "$(t banner_uninstall)"
     fi
     echo ""
-    echo -e "  Found ${BOLD}${#pkgs[@]}${NC} packages from the file installed:"
+    echo -e "  $(printf "$(t fmt_found_n)" "${#pkgs[@]}")"
     echo ""
     for pkg in "${pkgs[@]}"; do
         echo -e "    ${YELLOW}•${NC} $pkg"
@@ -86,53 +199,45 @@ uninstall_packages() {
     echo ""
 
     if $dry_run; then
-        warn "Simulation mode: no real commands will be executed."
+        warn "$(t msg_simulation)"
         echo ""
     fi
 
-    read -r -p "$(echo -e "${YELLOW}Do you want to uninstall them? [y/N]: ${NC}")" confirm
+    read -r -p "$(echo -e "${YELLOW}$(t prompt_confirm) ${NC}")" confirm
     if [[ ! "$confirm" =~ ^[yYsS]$ ]]; then
-        info "Cancelled. No packages were uninstalled."
+        info "$(t msg_cancelled_none)"
         return
     fi
 
     echo ""
-    echo -e "  ${BOLD}1)${NC} All together  (single operation)"
-    echo -e "  ${BOLD}2)${NC} One by one     (confirm each package)"
-    echo -e "  ${BOLD}3)${NC} Cancel"
+    echo -e "  ${BOLD}1)${NC} $(t msg_all_together)"
+    echo -e "  ${BOLD}2)${NC} $(t msg_one_by_one)"
+    echo -e "  ${BOLD}3)${NC} $(t msg_cancel_option)"
     echo ""
-    read -r -p "$(echo -e "${BLUE}Choose mode [1-3]: ${NC}")" mode
+    read -r -p "$(echo -e "${BLUE}$(t prompt_mode) ${NC}")" mode
 
     case "$mode" in
         1)
             if $dry_run; then
-                if [[ "$helper" == "pacman" ]]; then
-                    warn "[DRY-RUN] Would execute: sudo pacman -Rns ${pkgs[*]}"
-                else
-                    warn "[DRY-RUN] Would execute: $helper -Rns ${pkgs[*]}"
-                fi
+                warn "$(printf "$(t fmt_would_exec)" "$helper" "${pkgs[*]}")"
             else
-                info "Uninstalling all packages..."
+                info "$(t msg_uninstalling_all)"
                 if [[ "$helper" == "pacman" ]]; then
                     sudo pacman -Rns "${pkgs[@]}"
                 else
                     "$helper" -Rns "${pkgs[@]}"
                 fi
-                ok "Uninstallation completed."
+                ok "$(t msg_uninstall_done)"
             fi
             ;;
         2)
             local count=0
             for pkg in "${pkgs[@]}"; do
                 echo ""
-                read -r -p "$(echo -e "${YELLOW}[$((count+1))/${#pkgs[@]}] Uninstall ${BOLD}$pkg${NC}${YELLOW}? [y/N]: ${NC}")" yn
+                read -r -p "$(echo -e "${YELLOW}$(printf "$(t fmt_progress)" "$((count+1))" "${#pkgs[@]}" "$pkg") ${NC}")" yn
                 if [[ "$yn" =~ ^[yYsS]$ ]]; then
                     if $dry_run; then
-                        if [[ "$helper" == "pacman" ]]; then
-                            warn "[DRY-RUN] Would execute: sudo pacman -Rns $pkg"
-                        else
-                            warn "[DRY-RUN] Would execute: $helper -Rns $pkg"
-                        fi
+                        warn "$(printf "$(t fmt_would_exec)" "$helper" "$pkg")"
                     else
                         if [[ "$helper" == "pacman" ]]; then
                             sudo pacman -Rns "$pkg"
@@ -142,69 +247,70 @@ uninstall_packages() {
                     fi
                     ((count++))
                 else
-                    info "Skipping $pkg"
+                    info "$(printf "$(t fmt_skipping)" "$pkg")"
                 fi
             done
             if $dry_run; then
-                ok "[DRY-RUN] Would have uninstalled $count package(s)."
+                ok "$(printf "$(t fmt_dry_finished)" "$count")"
             else
-                ok "Finished. $count package(s) uninstalled."
+                ok "$(printf "$(t fmt_finished)" "$count")"
             fi
             ;;
         3|*)
-            info "Cancelled."
+            info "$(t msg_cancelled)"
             ;;
     esac
 }
 
 usage() {
-    echo "Usage: $(basename "$0") [OPTIONS]"
+    printf "$(t usage_header)\n" "$(basename "$0")"
     echo ""
-    echo "Options:"
-    echo "  --dry-run    Simulates uninstallation without executing real commands"
-    echo "  -h, --help   Show this help"
+    echo "$(t usage_options)"
+    echo "$(t usage_dry)"
+    echo "$(t usage_help)"
     exit 0
 }
 
 main() {
+    detect_lang
     local dry_run=false
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --dry-run) dry_run=true; shift ;;
             -h|--help) usage ;;
-            *) err "Unknown option: $1"; usage ;;
+            *) err "$(printf "$(t fmt_unknown)" "$1")"; usage ;;
         esac
     done
 
     echo ""
     if $dry_run; then
-        banner "AUR CLEANUP [DRY-RUN]"
+        banner "$(t banner_cleanup_dry)"
     else
-        banner "AUR CLEANUP"
+        banner "$(t banner_cleanup)"
     fi
     echo ""
 
     if [[ ! -f "$PACKAGES_FILE" ]]; then
-        err "File not found: $PACKAGES_FILE"
+        err "$(printf "$(t fmt_no_file)" "$PACKAGES_FILE")"
         exit 1
     fi
 
     local helper
     helper=$(detect_helper)
-    info "AUR helper detected: ${BOLD}$helper${NC}"
+    info "$(printf "$(t fmt_helper)" "$helper")"
 
-    info "Parsing $(basename "$PACKAGES_FILE")..."
     local aur_from_file=()
+    info "$(printf "$(t msg_parsing)" "$(basename "$PACKAGES_FILE")")"
     mapfile -t aur_from_file < <(parse_aur_names)
-    ok "${#aur_from_file[@]} AUR packages found in file"
+    ok "$(printf "$(t fmt_found_file)" "${#aur_from_file[@]}")"
 
-    info "Querying installed AUR packages on system..."
     local installed_aur=()
+    info "$(t msg_querying)"
     mapfile -t installed_aur < <(get_installed_aur "$helper")
-    ok "${#installed_aur[@]} AUR packages installed in total on system"
+    ok "$(printf "$(t fmt_installed)" "${#installed_aur[@]}")"
 
-    info "Cross-referencing lists..."
+    info "$(t msg_crossref)"
     local matches=()
     while IFS= read -r pkg; do
         if printf '%s\n' "${installed_aur[@]}" | grep -Fxq "$pkg"; then
@@ -214,16 +320,16 @@ main() {
 
     echo ""
     if [[ ${#matches[@]} -eq 0 ]]; then
-        ok "No packages from the file are currently installed."
+        ok "$(t msg_no_matches)"
     else
-        ok "Found ${BOLD}${#matches[@]}${NC} package(s) from the file installed."
+        ok "$(printf "$(t fmt_matches_found)" "${#matches[@]}")"
 
         generate_report matches
         uninstall_packages "$helper" "$dry_run" "${matches[@]}"
     fi
 
     echo ""
-    ok "Script finished."
+    ok "$(t msg_finished)"
 }
 
 main "$@"
