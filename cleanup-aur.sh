@@ -75,6 +75,10 @@ t() {
             msg_finished)           echo "Script finalizado." ;;
             fmt_helper)             echo "Helper AUR detectado: %s" ;;
             fmt_no_file)            echo "No se encontró el archivo: %s" ;;
+            msg_plain_match)        echo "coincidencia directa (blacklist)" ;;
+            msg_verified_match)     echo "firma verificada en PKGBUILD" ;;
+            msg_blacklist_match)    echo "PKGBUILD inaccesible (blacklist)" ;;
+            msg_no_match)           echo "PKGBUILD no coincide (ignorado)" ;;
 
             *) echo "$1" ;;
         esac
@@ -125,6 +129,10 @@ t() {
             msg_finished)           echo "Script finished." ;;
             fmt_helper)             echo "AUR helper detected: %s" ;;
             fmt_no_file)            echo "File not found: %s" ;;
+            msg_plain_match)        echo "direct match (blacklist)" ;;
+            msg_verified_match)     echo "signature verified in PKGBUILD" ;;
+            msg_blacklist_match)    echo "PKGBUILD unreachable (blacklist)" ;;
+            msg_no_match)           echo "PKGBUILD does not match (skipped)" ;;
 
             *) echo "$1" ;;
         esac
@@ -139,6 +147,72 @@ detect_helper() {
 
 parse_aur_names() {
     sed 's/:.*//' "$PACKAGES_FILE" | grep -oP '^[a-zA-Z0-9][a-zA-Z0-9._+-]+' | sort -u
+}
+
+_trim() {
+    sed 's/^[[:space:]]*//;s/[[:space:]]*$//' <<< "$1"
+}
+
+get_tokens_from_line() {
+    local line="$1"
+    local rest="${line#*:}"
+    if [[ "$rest" == *:* ]]; then
+        local t1="${rest%%:*}"
+        local t2="${rest#*:}"
+        t1=$(_trim "$t1")
+        t2=$(_trim "$t2")
+        [[ -n "$t1" ]] && echo "$t1"
+        [[ -n "$t2" ]] && echo "$t2"
+    else
+        local t
+        t=$(_trim "$rest")
+        [[ -n "$t" ]] && echo "$t"
+    fi
+}
+
+get_pkgbuild_content() {
+    local pkg="$1"
+    local helper="$2"
+
+    local cache_paths=(
+        "$HOME/.cache/paru/clone/$pkg/PKGBUILD"
+        "$HOME/.cache/yay/$pkg/PKGBUILD"
+    )
+    for path in "${cache_paths[@]}"; do
+        if [[ -f "$path" ]]; then
+            cat "$path" 2>/dev/null && return 0
+        fi
+    done
+
+    local tmpdir
+    tmpdir=$(mktemp -d -t aur-cleanup-XXXXXX)
+    (
+        cd "$tmpdir" || exit 1
+        if [[ "$helper" == "pacman" ]]; then
+            git clone "https://aur.archlinux.org/$pkg.git" 2>/dev/null || return 1
+        else
+            timeout 30 "$helper" -G "$pkg" 2>/dev/null || return 1
+        fi
+        [[ -f "$pkg/PKGBUILD" ]] && cat "$pkg/PKGBUILD" 2>/dev/null || return 1
+    )
+    local ret=$?
+    rm -rf "$tmpdir" 2>/dev/null
+    return $ret
+}
+
+pkgbuild_contains() {
+    local content="$1"
+    shift
+    local tokens=("$@")
+
+    [[ ${#tokens[@]} -eq 0 ]] && return 0
+
+    for token in "${tokens[@]}"; do
+        if echo "$content" | grep -Fq "$token"; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 get_installed_aur() {
@@ -312,9 +386,29 @@ main() {
 
     info "$(t msg_crossref)"
     local matches=()
+    local plain_count=0
+    local verified_count=0
+    local blacklist_count=0
     while IFS= read -r pkg; do
         if printf '%s\n' "${installed_aur[@]}" | grep -Fxq "$pkg"; then
-            matches+=("$pkg")
+            local line
+            line=$(grep "^${pkg}:" "$PACKAGES_FILE" 2>/dev/null | head -1 || echo "$pkg")
+            if [[ "$line" != *:* ]]; then
+                matches+=("$pkg")
+                ((plain_count++))
+            else
+                local tokens=()
+                mapfile -t tokens < <(get_tokens_from_line "$line")
+                local content
+                content=$(get_pkgbuild_content "$pkg" "$helper")
+                if [[ -z "$content" ]]; then
+                    matches+=("$pkg")
+                    ((blacklist_count++))
+                elif pkgbuild_contains "$content" "${tokens[@]}"; then
+                    matches+=("$pkg")
+                    ((verified_count++))
+                fi
+            fi
         fi
     done < <(printf '%s\n' "${aur_from_file[@]}")
 
@@ -323,6 +417,15 @@ main() {
         ok "$(t msg_no_matches)"
     else
         ok "$(printf "$(t fmt_matches_found)" "${#matches[@]}")"
+        if (( plain_count > 0 )); then
+            echo -e "    ${BOLD}${plain_count}${NC} $(t msg_plain_match)"
+        fi
+        if (( verified_count > 0 )); then
+            echo -e "    ${BOLD}${verified_count}${NC} $(t msg_verified_match)"
+        fi
+        if (( blacklist_count > 0 )); then
+            echo -e "    ${BOLD}${blacklist_count}${NC} $(t msg_blacklist_match)"
+        fi
 
         generate_report matches
         uninstall_packages "$helper" "$dry_run" "${matches[@]}"

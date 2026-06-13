@@ -17,14 +17,47 @@ Interactive script to identify and uninstall AUR packages listed in `packages-fu
 
 ## What it does
 
-1. **Parsing** — Extracts AUR package names from `packages-full.txt` (first field before `:` in lines with metadata, or the entire line if it's just a name)
-2. **Detection** — Auto-detects available AUR helper (`paru` → `yay` → `pacman`)
-3. **Crossing** — Compares file list with AUR packages installed on system (`paru -Qm`)
-4. **Report** — Generates `reports/installed-<timestamp>.txt` with matching packages and their associated npm dependencies
-5. **Interactive Uninstallation** — If there are matches, offers:
+1. **Language detection** — Detects system language from `$LANG`; outputs messages in Spanish if `$LANG` starts with `es`, otherwise in English
+2. **Parsing** — Extracts AUR package names from `packages-full.txt` (first field before `:` in lines with metadata, or the entire line if it's just a name)
+3. **Detection** — Auto-detects available AUR helper (`paru` → `yay` → `pacman`)
+4. **Crossing** — Compares file list with AUR packages installed on system (`paru -Qm`)
+5. **PKGBUILD verification** — For each match with metadata, inspects the package's PKGBUILD to confirm it contains the malicious signatures (see below) before marking it for uninstallation
+6. **Report** — Generates `reports/installed-<timestamp>.txt` with matching packages and their associated metadata
+7. **Interactive Uninstallation** — If there are matches, offers:
    - **Batch mode**: uninstalls all together (`paru -Rns pkg1 pkg2 ...`)
    - **One by one mode**: confirms each package individually
    - **Cancel**
+
+## PKGBUILD verification
+
+When a package from the blacklist is found installed on the system, the script verifies that its PKGBUILD actually contains the malicious signatures before recommending its removal. This prevents false positives when a package with the same name was installed from a legitimate source.
+
+**Verification tokens** are extracted from the metadata in `packages-full.txt`. For a line like:
+
+```
+apple-music-desktop:apple-music-desktop-deps.install:  npm install atomic-lockfile ora
+```
+
+The tokens are:
+- `apple-music-desktop-deps.install` — the install file name
+- `npm install atomic-lockfile ora` — the full npm payload
+
+**Decision matrix:**
+
+| Condition | Result |
+|-----------|--------|
+| Entry without `:` (plain name) | Marked directly (blacklist) |
+| PKGBUILD found and contains at least one token | Marked (signature verified) |
+| PKGBUILD unreachable (not in cache, clone failed) | Marked (blacklist, safety precaution) |
+| PKGBUILD found but contains no tokens | Skipped (legitimate installation) |
+
+The output shows a breakdown of matches by category:
+```
+[✔] Found 6 package(s) from the file installed.
+    2 direct match (blacklist)
+    3 signature verified in PKGBUILD
+    1 PKGBUILD unreachable (blacklist)
+```
 
 ## Language
 
@@ -73,6 +106,8 @@ fast-glob
 ```
 
 The script extracts the AUR package name from both variants using `sed 's/:.*//'`, removing everything from the first `:` onwards (if it exists) and taking the resulting name.
+
+For lines with metadata, the content after the first `:` is used as verification tokens during PKGBUILD inspection. Only the package name (first field) and these tokens affect the matching logic.
 
 ## Maintaining the list
 
