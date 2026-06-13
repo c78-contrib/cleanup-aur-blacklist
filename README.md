@@ -1,6 +1,6 @@
 # AUR Cleanup
 
-Interactive script to identify and uninstall AUR packages listed in `packages-full.txt` that are currently installed on an Arch Linux system.
+Interactive script to identify and uninstall AUR packages listed in `packages-full.txt` that are currently installed on an Arch Linux system. Those packages potentially contains malware.
 
 ## Requirements
 
